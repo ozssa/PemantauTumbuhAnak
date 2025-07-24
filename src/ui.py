@@ -15,7 +15,6 @@ def buat_grafik(df_histori):
                      title="Perkembangan Z-score Anak",
                      hover_data={"Usia (Hari)": True, "Usia (Bulan)": True, "Tinggi (cm)": True, "Status": True})
         
-        # Garis batas normal
         fig.add_hline(y=2, line_dash="dot", line_color="green", 
                      annotation_text="Normal (+2)", annotation_position="top left")
         fig.add_hline(y=-2, line_dash="dash", line_color="orange", 
@@ -23,7 +22,6 @@ def buat_grafik(df_histori):
         fig.add_hline(y=-3, line_dash="dash", line_color="red", 
                      annotation_text="Stunting Berat (-3)", annotation_position="top left")
         
-        # Area warna
         fig.add_hrect(y0=-3, y1=-2, fillcolor="red", opacity=0.1, line_width=0)
         fig.add_hrect(y0=-2, y1=2, fillcolor="green", opacity=0.1, line_width=0)
         
@@ -54,7 +52,6 @@ def render_ui(profil):
     tanggal_sekarang = datetime.now()
     st.success(f"Tanggal Pengukuran: {tanggal_sekarang.strftime('%d/%m/%Y %H:%M:%S')}")
     
-    # CSS untuk styling yang mendukung light dan dark mode
     st.markdown("""
     <style>
     /* Light mode styles */
@@ -84,11 +81,10 @@ def render_ui(profil):
         font-weight: 500;
     }
     
-    /* Status colors - tetap sama untuk konsistensi */
     .status-normal { border-left-color: #28a745; }
     .status-normal .metric-value { color: #28a745; }
     .status-stunting { border-left-color: #ffc107; }
-    .status-stunting .metric-value { color: #e67e22; } /* Lebih gelap untuk dark mode */
+    .status-stunting .metric-value { color: #e67e22; }
     .status-severe { border-left-color: #dc3545; }
     .status-severe .metric-value { color: #dc3545; }
     
@@ -112,7 +108,6 @@ def render_ui(profil):
         margin: 0.5rem 0;
     }
     
-    /* Dark mode detection dan adaptasi */
     @media (prefers-color-scheme: dark) {
         :root {
             --background-color: #262730;
@@ -133,11 +128,10 @@ def render_ui(profil):
         }
         
         .status-stunting .metric-value { 
-            color: #f39c12; /* Lebih terang untuk dark mode */
+            color: #f39c12;
         }
     }
     
-    /* Streamlit dark theme override */
     [data-testid="stAppViewContainer"][data-theme="dark"] .metric-container,
     .stApp[data-theme="dark"] .metric-container {
         background-color: #262730 !important;
@@ -178,13 +172,11 @@ def render_ui(profil):
     </style>
     """, unsafe_allow_html=True)
     
-    # Data profil
     nama = profil["nama"]
     jenis_kelamin = profil["jenis_kelamin"]
     tanggal_lahir = profil["tanggal_lahir"]
     tanggal_lahir_dt = datetime.combine(tanggal_lahir, datetime.min.time())
     
-    # Hitung usia
     try:
         usia_hari = hitung_usia_hari(tanggal_lahir_dt, tanggal_sekarang)
     except ValueError as e:
@@ -197,7 +189,6 @@ def render_ui(profil):
     
     usia_bulan = hitung_usia_bulan(usia_hari)
     
-    # Profil anak dalam info box
     st.markdown(f"""
     <div class="info-box">
         <h4 style="margin-top: 0; margin-bottom: 1rem;">Profil Anak</h4>
@@ -212,7 +203,6 @@ def render_ui(profil):
         st.error(f"Usia anak ({usia_hari} hari) melebihi rentang data referensi WHO (maksimum 1856 hari). Aplikasi ini untuk anak 0-5 tahun.")
         return
 
-    # Form input
     with st.form("form_stunting"):
         st.subheader("Input Tinggi Badan")
         
@@ -234,7 +224,7 @@ def render_ui(profil):
                 st.error(f"Error: {pesan_validasi}")
                 return
 
-            file_path = f"data/lhfa-boys-zscore-expanded-tables.xlsx"
+            file_path = f"data/lhfa-{'girls' if jenis_kelamin == 'Perempuan' else 'boys'}-zscore-expanded-tables.xlsx"
             
             df = baca_data(file_path)
             L, M, S = interpolasi(usia_hari, df)
@@ -248,7 +238,6 @@ def render_ui(profil):
                 
             st.success(f"Berhasil: {message}")
             
-            # Hasil analisis
             with st.container():
                 st.subheader("Hasil Analisis Pertumbuhan")
                 
@@ -279,7 +268,6 @@ def render_ui(profil):
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # Detail pengukuran
                 with st.expander("Detail Pengukuran"):
                     st.write(f"**Nama:** {nama}")
                     st.write(f"**Jenis Penginput:** WARGA")
@@ -287,7 +275,6 @@ def render_ui(profil):
                     st.write(f"**Jenis Kelamin:** {jenis_kelamin}")
                     st.write(f"**Parameter WHO:** L={L:.4f}, M={M:.2f}, S={S:.4f}")
                 
-                # Status alert
                 if z_score < -2:
                     st.error(f"Perhatian: {pesan}")
                 elif z_score > 2:
@@ -297,17 +284,15 @@ def render_ui(profil):
         
         except FileNotFoundError as e:
             st.error(f"File tidak ditemukan: {str(e)}")
-            st.info("Pastikan file Excel 'lhfa-boys-zscore-expanded-tables.xlsx' ada di folder data.")
+            st.info("Pastikan file Excel 'lhfa-boys-zscore-expanded-tables.xlsx' dan 'lhfa-girls-zscore-expanded-tables.xlsx' ada di folder data/.")
         except Exception as e:
             st.error(f"Terjadi kesalahan: {str(e)}")
 
-    # Histori dan grafik
     st.markdown("---")
     st.subheader("Histori dan Grafik Pertumbuhan")
     
     df_histori = baca_histori()
     if not df_histori.empty:
-        # Ringkasan data
         col1, col2, col3 = st.columns(3)
         
         with col1:
@@ -321,15 +306,12 @@ def render_ui(profil):
             stunting_count = len(df_histori[df_histori['Z-score'].astype(float) < -2])
             st.metric("Riwayat Stunting", f"{stunting_count} kali")
         
-        # Tabel histori
         st.subheader("Data Histori Pengukuran")
         st.dataframe(df_histori, use_container_width=True)
         
-        # Grafik
         st.subheader("Grafik Perkembangan Z-score")
         buat_grafik(df_histori)
         
-        # Analisis tren
         if len(df_histori) >= 2:
             z_scores = df_histori['Z-score'].astype(float)
             trend = "naik" if z_scores.iloc[-1] > z_scores.iloc[-2] else "turun"
@@ -340,13 +322,12 @@ def render_ui(profil):
     else:
         st.info("Belum ada data histori pengukuran. Silakan lakukan pengukuran pertama.")
         
-    # Footer informasi
     st.markdown("---")
     with st.expander("Informasi Penting"):
         st.markdown("""
         **Catatan Penting:**
         - Aplikasi ini menggunakan standar WHO Growth Charts (Length/Height-for-Age Z-scores, 0-1856 hari)
-        - Data referensi diambil dari tabel WHO resmi untuk anak laki-laki
+        - Data referensi diambil dari tabel WHO resmi untuk anak laki-laki dan perempuan
         - Konsultasikan hasil dengan tenaga kesehatan untuk diagnosis akurat
         - Pemantauan rutin penting untuk deteksi dini stunting
         - Data histori disimpan di sesi aplikasi dan akan hilang saat aplikasi ditutup
